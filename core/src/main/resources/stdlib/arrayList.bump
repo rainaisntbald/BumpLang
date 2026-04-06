@@ -1,0 +1,174 @@
+import "stdlib.iterable";
+import "stdlib.option";
+
+class ArrayList<T> implements Iterable<T> {
+    private Array _list = [];
+
+    public fun void init() {
+    }
+
+    public fun void init(Array list) {
+        this._list = [];
+        for(Integer i = 0; i < list.length(); i++) {
+            this.add(list.get(i));
+        }
+    }
+
+    public fun void add(T item) {
+        this._list.push(item);
+    }
+
+    public fun void add_all(Iterable<T> items) {
+        Iterator<T> it = items.iter();
+        while (it.has_next()) {
+            this.add(it.next());
+        }
+    }
+
+    public fun T get(Integer index) {
+        return this._list.get(index);
+    }
+
+    public fun void set(Integer index, T item) {
+        this._list.set(index, item);
+    }
+
+    public fun T remove_at(Integer index) {
+        return this._list.remove(index);
+    }
+
+    public fun T pop() {
+        return this._list.pop();
+    }
+
+    public fun void insert(Integer index, T item) {
+        this._list.insert(index, item);
+    }
+
+    public fun Bool contains(T item) {
+        return this._list.contains(item);
+    }
+
+    public fun Integer index_of(T item) {
+        return this._list.index_of(item);
+    }
+
+    public fun Integer size() {
+        return this._list.length();
+    }
+
+    public fun Option<T> first() {
+        if (this.is_empty()) {
+            return Option<T>.None;
+        }
+        return Option<T>.Some(this.get(0));
+    }
+
+    public fun Option<T> last() {
+        if (this.is_empty()) {
+            return Option<T>.None;
+        }
+        return Option<T>.Some(this.get(this.size() - 1));
+    }
+
+    public fun T first_or(T fallback) {
+        return this.first().unwrap_or(fallback);
+    }
+
+    public fun T last_or(T fallback) {
+        return this.last().unwrap_or(fallback);
+    }
+
+    public fun Bool is_empty() {
+        return this.size() == 0;
+    }
+
+    public fun Bool remove(T item) {
+        Integer index = this.index_of(item);
+        if (index == -1) {
+            return false;
+        }
+        this.remove_at(index);
+        return true;
+    }
+
+    public fun void clear() {
+        this._list.clear();
+    }
+
+    public fun Array to_array() {
+        return this._list.copy();
+    }
+
+    public fun ArrayList<T> copy() {
+        ArrayList<T> next = ArrayList<T>(this._list);
+        return next;
+    }
+
+    public fun void reverse_in_place() {
+        Integer left = 0;
+        Integer right = this.size() - 1;
+        while (left < right) {
+            T leftValue = this.get(left);
+            T rightValue = this.get(right);
+            this.set(left, rightValue);
+            this.set(right, leftValue);
+            left += 1;
+            right -= 1;
+        }
+    }
+
+    public fun ArrayList<T> reversed() {
+        ArrayList<T> out = this.copy();
+        out.reverse_in_place();
+        return out;
+    }
+
+    public fun String join(String separator) {
+        return this._list.join(separator);
+    }
+
+    public fun Iterator<T> iter() {
+        return ArrayListIterator<T>(this);
+    }
+
+    public fun String to_string() {
+        String result = "[";
+        for(Integer i = 0; i < this._list.length(); i++) {
+            if(i > 0) {
+                result += ",";
+            }
+            result += str(this._list.get(i));
+        }
+        return result + "]";
+    }
+}
+
+class ArrayListIterator<T> extends Iterator<T> {
+    private ArrayList<T> _list;
+    private Integer _index;
+
+    public fun void init(ArrayList<T> list) {
+        this._list = list;
+        this._index = 0;
+    }
+
+    public fun Bool has_next() {
+        return this._index < this._list.size();
+    }
+
+    public fun T next() {
+        if (!this.has_next()) {
+            throw(ValueError());
+        }
+        T value = this._list.get(this._index);
+        this._index += 1;
+        return value;
+    }
+}
+
+extend Iterable {
+    fun ArrayList<T> collect() {
+        return ArrayList<T>(this.collect_array());
+    }
+}

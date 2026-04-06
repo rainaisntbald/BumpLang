@@ -1,0 +1,289 @@
+import "stdlib.iterable";
+import "stdlib.option";
+import "stdlib.arrayList";
+
+class Entry<K, V> {
+    public K key;
+    public V value;
+
+    public fun void init(K key, V value) {
+        this.key = key;
+        this.value = value;
+    }
+}
+
+class HashMap<K, V> implements Iterable<Entry<K, V>> {
+    private Map _store;
+
+    public fun void init() {
+        this._store = {};
+    }
+
+    public fun Integer size() {
+        return this._store.length();
+    }
+
+    public fun Bool is_empty() {
+        return this.size() == 0;
+    }
+
+    public fun Bool contains_key(K key) {
+        return this._store.contains_key(key);
+    }
+
+    public fun V get(K key) {
+        return this._store.get(key);
+    }
+
+    public fun Option<V> get_option(K key) {
+        if (this._store.contains_key(key)) {
+            return Option<V>.Some(this._store.get(key));
+        }
+        return Option<V>.None;
+    }
+
+    public fun V get_or(K key, V fallback) {
+        if (this._store.contains_key(key)) {
+            return this._store.get(key);
+        }
+        return fallback;
+    }
+
+    public fun void set(K key, V value) {
+        this._store.set(key, value);
+    }
+
+    public fun V put_if_absent(K key, V value) {
+        if (this._store.contains_key(key)) {
+            return this._store.get(key);
+        }
+        this._store.set(key, value);
+        return value;
+    }
+
+    public fun V remove(K key) {
+        return this._store.remove(key);
+    }
+
+    public fun Array keys() {
+        return this._store.keys();
+    }
+
+    public fun Array values() {
+        return this._store.values();
+    }
+
+    public fun void clear() {
+        this._store.clear();
+    }
+
+    public fun ArrayList<Entry<K, V>> entries() {
+        ArrayList<Entry<K, V>> out = ArrayList<Entry<K, V>>();
+        Iterator<Entry<K, V>> it = this.iter();
+        while (it.has_next()) {
+            out.add(it.next());
+        }
+        return out;
+    }
+
+    public fun String to_string() {
+        return str(this._store);
+    }
+
+    public fun Iterator<Entry<K, V>> iter() {
+        Array entries = [];
+        Array ks = this._store.keys();
+        for (Integer i = 0; i < ks.length(); i++) {
+            K key = ks.get(i);
+            V value = this._store.get(key);
+            entries.push(Entry<K, V>(key, value));
+        }
+        return ArrayIterator<Entry<K, V>>(entries);
+    }
+}
+
+class HashSet<T> implements Iterable<T> {
+    private Map _store;
+
+    public fun void init() {
+        this._store = {};
+    }
+
+    public fun Integer size() {
+        return this._store.length();
+    }
+
+    public fun Bool is_empty() {
+        return this.size() == 0;
+    }
+
+    public fun Bool contains(T value) {
+        return this._store.contains_key(value);
+    }
+
+    public fun void add(T value) {
+        this._store.set(value, true);
+    }
+
+    public fun void add_all(Iterable<T> values) {
+        Iterator<T> it = values.iter();
+        while (it.has_next()) {
+            this.add(it.next());
+        }
+    }
+
+    public fun Bool remove(T value) {
+        if (!this._store.contains_key(value)) {
+            return false;
+        }
+        this._store.remove(value);
+        return true;
+    }
+
+    public fun Array values() {
+        return this._store.keys();
+    }
+
+    public fun void clear() {
+        this._store.clear();
+    }
+
+    public fun HashSet<T> union(HashSet<T> other) {
+        HashSet<T> out = HashSet<T>();
+        out.add_all(this);
+        out.add_all(other);
+        return out;
+    }
+
+    public fun HashSet<T> intersection(HashSet<T> other) {
+        HashSet<T> out = HashSet<T>();
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            T value = it.next();
+            if (other.contains(value)) {
+                out.add(value);
+            }
+        }
+        return out;
+    }
+
+    public fun HashSet<T> difference(HashSet<T> other) {
+        HashSet<T> out = HashSet<T>();
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            T value = it.next();
+            if (!other.contains(value)) {
+                out.add(value);
+            }
+        }
+        return out;
+    }
+
+    public fun String to_string() {
+        return str(this.values());
+    }
+
+    public fun Iterator<T> iter() {
+        return ArrayIterator<T>(this._store.keys());
+    }
+}
+
+class Stack<T> implements Iterable<T> {
+    private ArrayList<T> _items = ArrayList<T>();
+
+    public fun void init() {
+        this._items = ArrayList<T>();
+    }
+
+    public fun Integer size() {
+        return this._items.size();
+    }
+
+    public fun Bool is_empty() {
+        return this._items.is_empty();
+    }
+
+    public fun void push(T value) {
+        this._items.add(value);
+    }
+
+    public fun T pop() {
+        return this._items.pop();
+    }
+
+    public fun Option<T> peek() {
+        return this._items.last();
+    }
+
+    public fun void clear() {
+        this._items.clear();
+    }
+
+    public fun Iterator<T> iter() {
+        return this._items.iter();
+    }
+}
+
+class Queue<T> implements Iterable<T> {
+    private ArrayList<T> _items = ArrayList<T>();
+    private Integer _head = 0;
+
+    public fun void init() {
+        this._items = ArrayList<T>();
+        this._head = 0;
+    }
+
+    public fun Integer size() {
+        return this._items.size() - this._head;
+    }
+
+    public fun Bool is_empty() {
+        return this.size() == 0;
+    }
+
+    public fun void enqueue(T value) {
+        this._items.add(value);
+    }
+
+    public fun T dequeue() {
+        if (this.is_empty()) {
+            throw(ValueError());
+        }
+        T value = this._items.get(this._head);
+        this._head += 1;
+        this._compact_if_needed();
+        return value;
+    }
+
+    public fun Option<T> peek() {
+        if (this.is_empty()) {
+            return Option<T>.None;
+        }
+        return Option<T>.Some(this._items.get(this._head));
+    }
+
+    public fun void clear() {
+        this._items.clear();
+        this._head = 0;
+    }
+
+    private fun void _compact_if_needed() {
+        if (this._head < 32 && this._head * 2 < this._items.size()) {
+            return;
+        }
+        ArrayList<T> next = ArrayList<T>();
+        for (Integer i = this._head; i < this._items.size(); i++) {
+            next.add(this._items.get(i));
+        }
+        this._items = next;
+        this._head = 0;
+    }
+
+    public fun Iterator<T> iter() {
+        ArrayList<T> snapshot = ArrayList<T>();
+        for (Integer i = this._head; i < this._items.size(); i++) {
+            snapshot.add(this._items.get(i));
+        }
+        return snapshot.iter();
+    }
+}

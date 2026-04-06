@@ -1,0 +1,49 @@
+import "stdlib.arrayList";
+
+extend File {
+    fun String read_text() {
+        this.open();
+        try {
+            return this.contents();
+        } finally {
+            this.close();
+        }
+    }
+
+    fun void write_text(String content) {
+        this.open();
+        try {
+            this.set_contents(content);
+        } finally {
+            this.close();
+        }
+    }
+
+    fun void append_text(String content) {
+        String existing = this.read_text();
+        this.write_text(existing + content);
+    }
+
+    fun Bool exists() {
+        try {
+            this.open();
+            this.close();
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    fun Integer size_bytes() {
+        return this.read_text().length();
+    }
+
+    fun ArrayList<String> read_lines() {
+        Array raw = this.read_text().split("\n");
+        ArrayList<String> lines = ArrayList<String>();
+        for (Integer i = 0; i < raw.length(); i++) {
+            lines.add(String(raw.get(i)));
+        }
+        return lines;
+    }
+}

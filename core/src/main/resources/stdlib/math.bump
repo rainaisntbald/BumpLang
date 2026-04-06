@@ -1,0 +1,161 @@
+fun T min<T implements Comparable>(T left, T right) {
+    if (left < right) {
+        return left;
+    }
+    return right;
+}
+
+fun T max<T implements Comparable>(T left, T right) {
+    if (left > right) {
+        return left;
+    }
+    return right;
+}
+
+fun T clamp<T implements Comparable>(T value, T lower, T upper) {
+    if (lower > upper) {
+        throw(ValueError());
+    }
+    return min(max(value, lower), upper);
+}
+
+extend Integer {
+    fun Integer abs() {
+        if(this < 0) {
+            return 0 - this;
+        }
+        return this;
+    }
+
+    fun Integer clamp(Integer lower, Integer upper) {
+        if (lower > upper) {
+            throw(ValueError());
+        }
+        return min(max(this, lower), upper);
+    }
+
+    fun Integer sign() {
+        if (this > 0) {
+            return 1;
+        }
+        if (this < 0) {
+            return -1;
+        }
+        return 0;
+    }
+
+    fun Integer pow(Integer exponent) {
+        if (exponent < 0) {
+            throw(ValueError());
+        }
+        Integer result = 1;
+        for (Integer i = 0; i < exponent; i++) {
+            result *= this;
+        }
+        return result;
+    }
+
+    fun Integer gcd(Integer other) {
+        Integer a = this.abs();
+        Integer b = other.abs();
+        while (b != 0) {
+            Integer temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    fun Integer lcm(Integer other) {
+        if (this == 0 || other == 0) {
+            return 0;
+        }
+        return (this.abs() / this.gcd(other)) * other.abs();
+    }
+}
+
+extend Float {
+    fun Float abs() {
+        if (this < 0.0) {
+            return 0.0 - this;
+        }
+        return this;
+    }
+
+    fun Float clamp(Float lower, Float upper) {
+        if (lower > upper) {
+            throw(ValueError());
+        }
+        return min(max(this, lower), upper);
+    }
+
+    fun Integer sign() {
+        if (this > 0.0) {
+            return 1;
+        }
+        if (this < 0.0) {
+            return -1;
+        }
+        return 0;
+    }
+
+    fun Integer floor() {
+        Float value = this;
+        Integer out = 0;
+        unsafe_java {
+            Double value = (Double) get("value", environment);
+            double floored = Math.floor(value.doubleValue());
+            if (floored < Integer.MIN_VALUE || floored > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("Float.floor() result is out of Integer range.");
+            }
+            set("out", (int) floored, interpreter, environment);
+        }
+        return out;
+    }
+
+    fun Integer ceil() {
+        Integer out = this.floor();
+        if (out + 0.0 < this) {
+            return out + 1;
+        }
+        return out;
+    }
+
+    fun Integer round() {
+        Integer lower = this.floor();
+        Float delta = this - (lower + 0.0);
+        if (delta >= 0.5) {
+            return lower + 1;
+        }
+        return lower;
+    }
+
+    fun Float pow(Integer exponent) {
+        if (exponent == 0) {
+            return 1.0;
+        }
+        Integer positive_exponent = exponent.abs();
+        Float result = 1.0;
+        for (Integer i = 0; i < positive_exponent; i++) {
+            result *= this;
+        }
+        if (exponent < 0) {
+            return 1.0 / result;
+        }
+        return result;
+    }
+}
+
+fun Float sqrt(Float value) {
+    if (value < 0.0) {
+        throw(ValueError());
+    }
+    if (value == 0.0) {
+        return 0.0;
+    }
+    Float guess = value;
+    for (Integer i = 0; i < 20; i++) {
+        guess = (guess + value / guess) / 2.0;
+    }
+    return guess;
+}

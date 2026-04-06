@@ -1,0 +1,298 @@
+import "stdlib.option";
+
+abstract class Iterator<T> {
+    public fun Bool has_next() {
+        throw(ValueError());
+        return false;
+    }
+
+    public fun T next() {
+        throw(ValueError());
+        return null;
+    }
+}
+
+abstract class Iterable<T> {
+    public fun Iterator<T> iter() {
+        throw(ValueError());
+        return null;
+    }
+
+    public fun Iterable<U> map<U>(Function<U, T> mapper) {
+        return MappedIterable<T, U>(this, mapper);
+    }
+
+    public fun Iterable<T> filter(Function<Bool, T> predicate) {
+        return FilteredIterable<T>(this, predicate);
+    }
+
+    public fun Array collect_array() {
+        Array out = [];
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            out.push(it.next());
+        }
+        return out;
+    }
+
+    public fun Integer count() {
+        Integer total = 0;
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            it.next();
+            total += 1;
+        }
+        return total;
+    }
+
+    public fun Bool is_empty() {
+        return !this.iter().has_next();
+    }
+
+    public fun Option<T> first() {
+        Iterator<T> it = this.iter();
+        if (!it.has_next()) {
+            return Option<T>.None;
+        }
+        return Option<T>.Some(it.next());
+    }
+
+    public fun T first_or(T fallback) {
+        Option<T> first = this.first();
+        return first.unwrap_or(fallback);
+    }
+
+    public fun U reduce<U>(U initial, Function<U, U, T> reducer) {
+        U acc = initial;
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            acc = reducer(acc, it.next());
+        }
+        return acc;
+    }
+
+    public fun Option<T> find(Function<Bool, T> predicate) {
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            T value = it.next();
+            if (predicate(value)) {
+                return Option<T>.Some(value);
+            }
+        }
+        return Option<T>.None;
+    }
+
+    public fun Bool any(Function<Bool, T> predicate) {
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            if (predicate(it.next())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public fun Bool all(Function<Bool, T> predicate) {
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            if (!predicate(it.next())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public fun Bool none(Function<Bool, T> predicate) {
+        return !this.any(predicate);
+    }
+
+    public fun void for_each(Function<Null, T> action) {
+        Iterator<T> it = this.iter();
+        while (it.has_next()) {
+            action(it.next());
+        }
+    }
+
+    public fun Iterable<T> sort<T implements Comparable>() {
+        Array values = this.collect_array();
+        for (Integer i = 1; i < values.length(); i++) {
+            Integer j = i;
+            while (j > 0 && values.get(j - 1) > values.get(j)) {
+                Object left = values.get(j - 1);
+                Object right = values.get(j);
+                values.set(j - 1, right);
+                values.set(j, left);
+                j -= 1;
+            }
+        }
+        return ArrayIterable<T>(values);
+    }
+
+    public fun T min<T implements Comparable>() {
+        Iterator<T> it = this.iter();
+        if (!it.has_next()) {
+            throw(ValueError());
+        }
+        T best = it.next();
+        while (it.has_next()) {
+            T current = it.next();
+            if (current < best) {
+                best = current;
+            }
+        }
+        return best;
+    }
+
+    public fun T max<T implements Comparable>() {
+        Iterator<T> it = this.iter();
+        if (!it.has_next()) {
+            throw(ValueError());
+        }
+        T best = it.next();
+        while (it.has_next()) {
+            T current = it.next();
+            if (current > best) {
+                best = current;
+            }
+        }
+        return best;
+    }
+}
+
+class MappedIterator<T, U> extends Iterator<U> {
+    private Iterator<T> _inner;
+    private Function<U, T> _mapper;
+
+    public fun void init(Iterator<T> inner, Function<U, T> mapper) {
+        this._inner = inner;
+        this._mapper = mapper;
+    }
+
+    public fun Bool has_next() {
+        return this._inner.has_next();
+    }
+
+    public fun U next() {
+        return this._mapper(this._inner.next());
+    }
+}
+
+class MappedIterable<T, U> extends Iterable<U> {
+    private Iterable<T> _source;
+    private Function<U, T> _mapper;
+
+    public fun void init(Iterable<T> source, Function<U, T> mapper) {
+        this._source = source;
+        this._mapper = mapper;
+    }
+
+    public fun Iterator<U> iter() {
+        return MappedIterator<T, U>(this._source.iter(), this._mapper);
+    }
+}
+
+class FilteredIterator<T> extends Iterator<T> {
+    private Iterator<T> _inner;
+    private Function<Bool, T> _predicate;
+    private T _next_value;
+    private Bool _has_buffered = false;
+
+    public fun void init(Iterator<T> inner, Function<Bool, T> predicate) {
+        this._inner = inner;
+        this._predicate = predicate;
+    }
+
+    private fun void _fill() {
+        if (this._has_buffered) {
+            return;
+        }
+        while (this._inner.has_next()) {
+            T candidate = this._inner.next();
+            if (this._predicate(candidate)) {
+                this._next_value = candidate;
+                this._has_buffered = true;
+                return;
+            }
+        }
+    }
+
+    public fun Bool has_next() {
+        this._fill();
+        return this._has_buffered;
+    }
+
+    public fun T next() {
+        this._fill();
+        if (!this._has_buffered) {
+            throw(ValueError());
+        }
+        this._has_buffered = false;
+        return this._next_value;
+    }
+}
+
+class FilteredIterable<T> extends Iterable<T> {
+    private Iterable<T> _source;
+    private Function<Bool, T> _predicate;
+
+    public fun void init(Iterable<T> source, Function<Bool, T> predicate) {
+        this._source = source;
+        this._predicate = predicate;
+    }
+
+    public fun Iterator<T> iter() {
+        return FilteredIterator<T>(this._source.iter(), this._predicate);
+    }
+}
+
+class ArrayIterator<T> extends Iterator<T> {
+    private Array _values;
+    private Integer _index = 0;
+
+    public fun void init(Array values) {
+        this._values = values;
+    }
+
+    public fun Bool has_next() {
+        return this._index < this._values.length();
+    }
+
+    public fun T next() {
+        if (!this.has_next()) {
+            throw(ValueError());
+        }
+        T value = this._values.get(this._index);
+        this._index += 1;
+        return value;
+    }
+}
+
+class ArrayIterable<T> extends Iterable<T> {
+    private Array _values;
+
+    public fun void init(Array values) {
+        this._values = values;
+    }
+
+    public fun Iterator<T> iter() {
+        return ArrayIterator<T>(this._values);
+    }
+}
+
+extend Array {
+    fun Iterator<T> iter<T>() {
+        return ArrayIterator<T>(this);
+    }
+
+    fun Iterable<U> map<T, U>(Function<U, T> mapper) {
+        return ArrayIterable<T>(this).map<U>(mapper);
+    }
+
+    fun Iterable<T> filter<T>(Function<Bool, T> predicate) {
+        return ArrayIterable<T>(this).filter(predicate);
+    }
+
+    fun Array collect_array() {
+        return this.copy();
+    }
+}

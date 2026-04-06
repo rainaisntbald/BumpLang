@@ -1,0 +1,71 @@
+fun void fail(String message) {
+    ValueError err = ValueError();
+    err.message = message;
+    throw(err);
+}
+
+fun void assert_true(Bool value) {
+    if (!value) {
+        fail("Expected condition to be true.");
+    }
+}
+
+fun void assert_false(Bool value) {
+    if (value) {
+        fail("Expected condition to be false.");
+    }
+}
+
+fun void assert_eq<T>(T actual, T expected) {
+    if (actual != expected) {
+        fail("Expected " + str(expected) + " but got " + str(actual) + ".");
+    }
+}
+
+fun void assert_not_eq<T>(T actual, T expected) {
+    if (actual == expected) {
+        fail("Expected values to be different, but both were " + str(actual) + ".");
+    }
+}
+
+fun void assert_null(Object value) {
+    if (value != null) {
+        fail("Expected null but got " + str(value) + ".");
+    }
+}
+
+fun void assert_not_null(Object value) {
+    if (value == null) {
+        fail("Expected non-null value.");
+    }
+}
+
+fun void assert_contains(String text, String needle) {
+    if (!text.contains(needle)) {
+        fail("Expected '" + text + "' to contain '" + needle + "'.");
+    }
+}
+
+fun void assert_throws(Function thunk) {
+    Bool threw = false;
+    try {
+        thunk();
+    } catch (Exception ignored) {
+        threw = true;
+    }
+    if (!threw) {
+        fail("Expected function to throw.");
+    }
+}
+
+fun void assert_throws_type(Function thunk, Class expected_type) {
+    try {
+        thunk();
+    } catch (Exception err) {
+        if (type_of(err) == expected_type) {
+            return;
+        }
+        fail("Expected exception type " + str(expected_type) + " but got " + str(type_of(err)) + ".");
+    }
+    fail("Expected function to throw.");
+}

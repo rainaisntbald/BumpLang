@@ -1,0 +1,67 @@
+package bump;
+
+import ast.Stmt;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
+final class ProgramRunner {
+    private final Lexer lexer = new Lexer();
+    private final Interpreter interpreter = new Interpreter();
+    private final SourcePreprocessor sourcePreprocessor = new SourcePreprocessor();
+
+    void runPath(String path) throws IOException {
+        Path scriptPath = Path.of(path).toAbsolutePath().normalize();
+        runPreparedSource(sourcePreprocessor.preparePath(scriptPath));
+    }
+
+    void runSource(String source) {
+        Path cwd = Path.of(".").toAbsolutePath().normalize();
+        runPreparedSource(sourcePreprocessor.prepareSource(source, cwd));
+    }
+
+    private void runPreparedSource(SourcePreprocessor.PreparedSource prepared) {
+        BumpException.setSource(prepared.source(), prepared.locations());
+        List<Token> tokens = lexer.tokenize(prepared.source());
+        List<Stmt> program = parse(tokens, prepared.visibility());
+        execute(program);
+    }
+
+    private List<Stmt> parse(List<Token> tokens, ImportVisibility visibility) {
+        Parser parser = new Parser(tokens);
+        List<Stmt> program = parser.parseProgram();
+        Resolver resolver = new Resolver(interpreter, visibility);
+        resolver.resolve(program);
+        return program;
+    }
+
+    private void execute(List<Stmt> program) {
+        interpreter.predeclareTopLevelFunctions(program);
+        for (Stmt stmt : program) {
+            interpreter.execute(stmt);
+        }
+    }
+
+    BumpException uncaughtThrownException(Interpreter.ThrownException error) {
+        return interpreter.uncaughtThrownException(error);
+    }
+
+    List<BumpException> collectDiagnostics(String source, Path baseDirectory) {
+        try {
+            SourcePreprocessor.PreparedSource prepared = sourcePreprocessor.prepareSource(source, baseDirectory);
+            BumpException.setSource(prepared.source(), prepared.locations());
+            List<Token> tokens = lexer.tokenize(prepared.source());
+            return parseForDiagnostics(tokens, prepared.visibility());
+        } catch (BumpException error) {
+            return List.of(error);
+        }
+    }
+
+    private List<BumpException> parseForDiagnostics(List<Token> tokens, ImportVisibility visibility) {
+        Parser parser = new Parser(tokens);
+        List<Stmt> program = parser.parseProgram();
+        Resolver resolver = new Resolver(interpreter, visibility);
+        return resolver.resolveWithRecovery(program);
+    }
+}

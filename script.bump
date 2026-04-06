@@ -1,0 +1,78 @@
+import "stdlib.arrayList";
+import "stdlib.option";
+import "stdlib.iterable";
+import "stdlib.result";
+
+enum ParseStatus {
+    Ok(Integer value),
+    Invalid(String reason)
+}
+
+class Counter {
+    Integer value = 0;
+
+    fun void add(Integer amount) {
+        this.value += amount;
+    }
+}
+
+fun ParseStatus parse_score(String raw) {
+    try {
+        return ParseStatus.Ok(int(raw));
+    } catch (Exception e) {
+        return ParseStatus.Invalid("not an integer: " + raw);
+    }
+}
+
+fun Result<Integer, ValueError> safe_div(Integer left, Integer right) {
+    Result<Integer, ValueError> out = Result<Integer, ValueError>();
+    if (right == 0) {
+        ValueError err = ValueError();
+        err.message = "division by zero";
+        out.init_err(err);
+        return out;
+    }
+    out.init_ok(left / right);
+    return out;
+}
+
+ArrayList<String> raw_values = ArrayList<String>(["10", "7", "x", "13"]);
+ArrayList<Integer> parsed = ArrayList<Integer>();
+ArrayList<String> issues = ArrayList<String>();
+Counter total = Counter();
+
+for (String raw : raw_values) {
+    ParseStatus status = parse_score(raw);
+    switch (status) {
+        case Ok(value):
+            parsed.add(value);
+            total.add(value);
+            break;
+        case Invalid(reason):
+            issues.add(reason);
+            break;
+    }
+}
+
+print("Parsed values: " + parsed.to_string());
+print("Total: " + str(total.value));
+print("Count: " + str(parsed.size()));
+print("Average: " + str(total.value / parsed.size()));
+
+Integer max_value = parsed.max();
+print("Max: " + str(max_value));
+
+Result<Integer, ValueError> ratio = safe_div(total.value, 2);
+print("Half total: " + str(ratio.unwrap()));
+
+Result<Integer, ValueError> bad = safe_div(total.value, 0);
+if (bad.is_err()) {
+    print("safe_div error: " + bad.unwrap_err().message);
+}
+
+if (!issues.is_empty()) {
+    print("Rejected inputs:");
+    for (Integer i = 0; i < issues.size(); i++) {
+        print("- " + issues.get(i));
+    }
+}

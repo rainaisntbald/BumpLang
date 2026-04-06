@@ -1,0 +1,77 @@
+enum Option<T> {
+    Some(T value),
+    None
+}
+
+extend Option {
+    fun Bool is_some() {
+        return this.name == "Some";
+    }
+
+    fun Bool is_none() {
+        return this.name == "None";
+    }
+
+    fun T unwrap() {
+        if (this.name == "Some") {
+            return this.value;
+        }
+        return null;
+    }
+
+    fun T expect(String message) {
+        if (this.name == "Some") {
+            return this.value;
+        }
+        ValueError err = ValueError();
+        err.message = message;
+        throw(err);
+        return null;
+    }
+
+    fun T unwrap_or_throw() {
+        return this.expect("Tried to unwrap Option.None.");
+    }
+
+    fun T unwrap_or(T other) {
+        if (this.name == "Some") {
+            return this.value;
+        }
+        return other;
+    }
+
+    fun T unwrap_or_else(Function<T> supplier) {
+        if (this.name == "Some") {
+            return this.value;
+        }
+        return supplier();
+    }
+
+    fun Option<U> map<U>(Function<U, T> mapper) {
+        if (this.name == "Some") {
+            return Option<U>.Some(mapper(this.value));
+        }
+        return Option<U>.None;
+    }
+
+    fun Option<U> and_then<U>(Function<Option<U>, T> mapper) {
+        if (this.name == "Some") {
+            return mapper(this.value);
+        }
+        return Option<U>.None;
+    }
+
+    fun Option<T> filter(Function<Bool, T> predicate) {
+        if (this.name == "Some" && predicate(this.value)) {
+            return this;
+        }
+        return Option<T>.None;
+    }
+
+    fun Option<T> or_else(Function<Option<T>> supplier) {
+        if (this.name == "Some") {
+            return this;
+        }
+        return supplier();
+    }
+}

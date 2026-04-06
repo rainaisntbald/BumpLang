@@ -1,0 +1,126 @@
+class Result<T, E extends Exception> {
+    Bool _ok;
+    T _value;
+    E _error;
+    Integer _state = 0;
+
+    fun void init_ok(T value) {
+        this._ok = true;
+        this._value = value;
+        this._error = null;
+        this._state = 1;
+    }
+
+    fun void init_err(E error) {
+        this._ok = false;
+        this._error = error;
+        this._value = null;
+        this._state = 2;
+    }
+
+    private fun void _ensure_initialized() {
+        if (this._state == 0) {
+            ValueError err = ValueError();
+            err.message = "Result is uninitialized. Call init_ok(...) or init_err(...).";
+            throw(err);
+        }
+    }
+
+    fun Bool is_ok() {
+        this._ensure_initialized();
+        return this._ok;
+    }
+
+    fun Bool is_err() {
+        this._ensure_initialized();
+        return !this._ok;
+    }
+
+    fun T unwrap() {
+        this._ensure_initialized();
+        if (!this._ok) {
+            throw(this._error);
+        }
+        return this._value;
+    }
+
+    fun T expect(String message) {
+        this._ensure_initialized();
+        if (this._ok) {
+            return this._value;
+        }
+        ValueError err = ValueError();
+        err.message = message;
+        throw(err);
+        return null;
+    }
+
+    fun E unwrap_err() {
+        this._ensure_initialized();
+        if (this._ok) {
+            ValueError err = ValueError();
+            err.message = "Tried to unwrap_err() on an ok Result.";
+            throw(err);
+        }
+        return this._error;
+    }
+
+    fun E expect_err(String message) {
+        this._ensure_initialized();
+        if (!this._ok) {
+            return this._error;
+        }
+        ValueError err = ValueError();
+        err.message = message;
+        throw(err);
+        return null;
+    }
+
+    fun T unwrap_or(T fallback) {
+        this._ensure_initialized();
+        if (this._ok) {
+            return this._value;
+        }
+        return fallback;
+    }
+
+    fun T unwrap_or_else(Function<T, E> fallback) {
+        this._ensure_initialized();
+        if (this._ok) {
+            return this._value;
+        }
+        return fallback(this._error);
+    }
+
+    fun Result<U, E> map<U>(Function<U, T> mapper) {
+        this._ensure_initialized();
+        Result<U, E> next = Result<U, E>();
+        if (this._ok) {
+            next.init_ok(mapper(this._value));
+        } else {
+            next.init_err(this._error);
+        }
+        return next;
+    }
+
+    fun Result<T, F> map_err<F extends Exception>(Function<F, E> mapper) {
+        this._ensure_initialized();
+        Result<T, F> next = Result<T, F>();
+        if (this._ok) {
+            next.init_ok(this._value);
+        } else {
+            next.init_err(mapper(this._error));
+        }
+        return next;
+    }
+
+    fun Result<U, E> and_then<U>(Function<Result<U, E>, T> mapper) {
+        this._ensure_initialized();
+        if (this._ok) {
+            return mapper(this._value);
+        }
+        Result<U, E> next = Result<U, E>();
+        next.init_err(this._error);
+        return next;
+    }
+}
