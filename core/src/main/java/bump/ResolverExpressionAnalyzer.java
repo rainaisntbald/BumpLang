@@ -580,18 +580,19 @@ final class ResolverExpressionAnalyzer {
         }
         ClassInfo classInfo = requireClassInfo(receiverType, "Cannot apply operator to value of type " + describeType(receiverType) + ".");
         List<SemanticType> overloads = resolver.bindMethodOverloads(classInfo, receiverType, methodName);
+        List<SemanticType> argumentTypes = singletonListAllowingNull(argumentType);
         SemanticType methodType;
         if (overloads.size() == 1) {
             methodType = overloads.get(0);
         } else {
             try {
-                methodType = resolver.resolveFunctionOverload(methodName, overloads, List.of(argumentType), methodName);
+                methodType = resolver.resolveFunctionOverload(methodName, overloads, argumentTypes, methodName);
             } catch (BumpException error) {
                 List<SemanticType> sameArity = overloads.stream()
                         .filter(overload -> overload.parameterTypes().size() == 1)
                         .toList();
                 if (!sameArity.isEmpty() && error.getDetail().startsWith("No overload of")) {
-                    validateArgumentTypes(sameArity.get(0).parameterTypes(), List.of(argumentType), "operation on " + classInfo.name);
+                    validateArgumentTypes(sameArity.get(0).parameterTypes(), argumentTypes, "operation on " + classInfo.name);
                 }
                 throw error;
             }
@@ -616,9 +617,15 @@ final class ResolverExpressionAnalyzer {
             throw BumpException.semantic("Cannot concatenate Char with " + argumentType.name() + ".");
         }
         if (argumentType != null) {
-            validateArgumentTypes(methodType.parameterTypes(), List.of(argumentType), "operation on " + classInfo.name);
+            validateArgumentTypes(methodType.parameterTypes(), argumentTypes, "operation on " + classInfo.name);
         }
         return methodType.returnType();
+    }
+
+    private List<SemanticType> singletonListAllowingNull(SemanticType type) {
+        List<SemanticType> values = new ArrayList<>(1);
+        values.add(type);
+        return values;
     }
 
     void validateAssignmentCompatibility(SemanticType targetType, SemanticType valueType, String targetDescription) {
