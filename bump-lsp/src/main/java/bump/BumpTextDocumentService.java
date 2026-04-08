@@ -26,10 +26,6 @@ public final class BumpTextDocumentService implements TextDocumentService {
     private final Map<String, String> openDocuments = new HashMap<>();
     private LanguageClient client;
 
-    BumpTextDocumentService() {
-        this(true);
-    }
-
     BumpTextDocumentService(boolean emitUnsafeJavaWarnings) {
         this.emitUnsafeJavaWarnings = emitUnsafeJavaWarnings;
     }

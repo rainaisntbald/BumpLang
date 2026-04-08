@@ -53,8 +53,6 @@ final class JavaBlockRuntime {
             executable.execute(interpreter, environment);
         } catch (BumpException error) {
             throw error;
-        } catch (RuntimeException error) {
-            throw BumpRuntimeError.error("Java block failed: " + error.getClass().getName() + ": " + error.getMessage());
         } catch (Exception error) {
             throw BumpRuntimeError.error("Java block failed: " + error.getClass().getName() + ": " + error.getMessage());
         }

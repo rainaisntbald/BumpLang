@@ -111,10 +111,6 @@ public class Resolver implements Visitor<Void> {
         }
     }
 
-    Map<String, SymbolInfo> snapshotGlobalSymbols() {
-        return globalSymbolSnapshot;
-    }
-
     Map<String, SymbolInfo> snapshotVisibleSymbols(String sourceFile, int sourceLine) {
         if (sourceFile == null || sourceLine <= 0) {
             return globalSymbolSnapshot;
@@ -206,7 +202,7 @@ public class Resolver implements Visitor<Void> {
         try {
             resolveFunctionSignature(function);
             currentReturnType = function.getResolvedReturnType();
-            for (Parameter parameter : function.parameters) {
+            for (Parameter ignored : function.parameters) {
                 // Signatures are resolved before body resolution so call sites can use them.
             }
             beginTypeParameterScope(function.typeParameters);
@@ -885,7 +881,7 @@ public class Resolver implements Visitor<Void> {
         return BumpException.sourceFileForLine(activeLine);
     }
 
-    SemanticType resolveFunctionOverload(String name, List<SemanticType> overloads, List<SemanticType> argumentTypes, String targetDescription) {
+    SemanticType resolveFunctionOverload(List<SemanticType> overloads, List<SemanticType> argumentTypes, String targetDescription) {
         if (overloads.isEmpty()) {
             return null;
         }

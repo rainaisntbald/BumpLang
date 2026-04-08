@@ -13,10 +13,6 @@ public final class BumpLanguageServer implements LanguageServer, LanguageClientA
     private final BumpTextDocumentService textDocumentService;
     private final WorkspaceService workspaceService = new BumpWorkspaceService();
 
-    public BumpLanguageServer() {
-        this(true);
-    }
-
     public BumpLanguageServer(boolean emitUnsafeJavaWarnings) {
         this.textDocumentService = new BumpTextDocumentService(emitUnsafeJavaWarnings);
     }

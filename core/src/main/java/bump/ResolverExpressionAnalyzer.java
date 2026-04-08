@@ -222,7 +222,7 @@ final class ResolverExpressionAnalyzer {
                     validateArgumentTypes(overload.parameterTypes(), argumentTypes, "call");
                     return overload.returnType();
                 }
-                SemanticType overload = resolver.resolveFunctionOverload(variableExpr.name, symbol.overloads(), argumentTypes, variableExpr.name);
+                SemanticType overload = resolver.resolveFunctionOverload(symbol.overloads(), argumentTypes, variableExpr.name);
                 return overload == null ? null : overload.returnType();
             }
         }
@@ -285,7 +285,7 @@ final class ResolverExpressionAnalyzer {
                 validateArgumentTypes(overload.parameterTypes(), argumentTypes, "call");
                 return overload.returnType();
             }
-            SemanticType overload = resolver.resolveFunctionOverload(getExpr.name, overloads, argumentTypes, getExpr.name);
+            SemanticType overload = resolver.resolveFunctionOverload(overloads, argumentTypes, getExpr.name);
             return overload == null ? null : overload.returnType();
         }
 
@@ -309,7 +309,6 @@ final class ResolverExpressionAnalyzer {
                 return overload.returnType();
             }
             SemanticType overload = resolver.resolveFunctionOverload(
-                    superExpr.member.getText(),
                     overloads,
                     argumentTypes,
                     superExpr.member.getText()
@@ -336,7 +335,7 @@ final class ResolverExpressionAnalyzer {
             return overload == null ? null : overload.returnType();
         }
         if (!calleeType.typeParameters().isEmpty()) {
-            SemanticType overload = resolver.resolveFunctionOverload("call", List.of(calleeType), argumentTypes, "call");
+            SemanticType overload = resolver.resolveFunctionOverload(List.of(calleeType), argumentTypes, "call");
             return overload == null ? null : overload.returnType();
         }
         validateArgumentTypes(calleeType.parameterTypes(), argumentTypes, "call");
@@ -558,7 +557,7 @@ final class ResolverExpressionAnalyzer {
         List<SemanticType> overloads = classInfo.methodOverloads(methodName);
         SemanticType methodType = overloads.size() == 1
                 ? overloads.get(0)
-                : resolver.resolveFunctionOverload(methodName, overloads, List.of(), methodName);
+                : resolver.resolveFunctionOverload(overloads, List.of(), methodName);
         if (methodType == null) {
             throw BumpException.semantic("Cannot apply operator to value of type " + classInfo.name + ".");
         }
@@ -586,7 +585,7 @@ final class ResolverExpressionAnalyzer {
             methodType = overloads.get(0);
         } else {
             try {
-                methodType = resolver.resolveFunctionOverload(methodName, overloads, argumentTypes, methodName);
+                methodType = resolver.resolveFunctionOverload(overloads, argumentTypes, methodName);
             } catch (BumpException error) {
                 List<SemanticType> sameArity = overloads.stream()
                         .filter(overload -> overload.parameterTypes().size() == 1)
@@ -740,7 +739,7 @@ final class ResolverExpressionAnalyzer {
             }
             return;
         }
-        SemanticType constructorType = resolver.resolveFunctionOverload(className, constructorTypes, argumentTypes, className);
+        SemanticType constructorType = resolver.resolveFunctionOverload(constructorTypes, argumentTypes, className);
         if (constructorType == null) {
             return;
         }
