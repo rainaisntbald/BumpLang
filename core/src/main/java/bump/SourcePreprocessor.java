@@ -294,9 +294,6 @@ final class SourcePreprocessor {
             throw BumpException.runtime("Import module name cannot be empty.");
         }
         String[] segments = moduleName.split("\\.");
-        if (segments.length < 2) {
-            throw BumpException.runtime("Import module '" + moduleName + "' must use dotted module format like 'stdlib.arrayList'.");
-        }
         for (String segment : segments) {
             if (!MODULE_SEGMENT_PATTERN.matcher(segment).matches()) {
                 throw BumpException.runtime("Invalid import module '" + moduleName + "'. Use dotted identifiers like 'stdlib.arrayList'.");

@@ -336,7 +336,7 @@ final class SemanticLanguageSpecCases {
                     """
                     import arraylist;
                     """,
-                    "must use dotted module format",
+                    "Imported module file not found",
                     Set.of(2)
             )
     );
