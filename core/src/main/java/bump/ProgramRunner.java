@@ -5,8 +5,13 @@ import ast.Stmt;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 final class ProgramRunner {
+    private static final String IN_MEMORY_SOURCE_LABEL = "<source>";
+
+    record CompletionSnapshot(Resolver resolver, Map<String, SymbolInfo> symbols) {}
+
     private final Lexer lexer = new Lexer();
     private final Interpreter interpreter = new Interpreter();
     private final SourcePreprocessor sourcePreprocessor = new SourcePreprocessor();
@@ -63,5 +68,21 @@ final class ProgramRunner {
         List<Stmt> program = parser.parseProgram();
         Resolver resolver = new Resolver(interpreter, visibility);
         return resolver.resolveWithRecovery(program);
+    }
+
+    CompletionSnapshot completionSnapshot(String source, Path baseDirectory, int sourceLine) {
+        try {
+            SourcePreprocessor.PreparedSource prepared = sourcePreprocessor.prepareSource(source, baseDirectory);
+            BumpException.setSource(prepared.source(), prepared.locations());
+            List<Token> tokens = lexer.tokenize(prepared.source());
+            Parser parser = new Parser(tokens);
+            List<Stmt> program = parser.parseProgram();
+            Resolver resolver = new Resolver(interpreter, prepared.visibility());
+            resolver.resolveWithRecovery(program);
+            Map<String, SymbolInfo> visible = resolver.snapshotVisibleSymbols(IN_MEMORY_SOURCE_LABEL, sourceLine);
+            return new CompletionSnapshot(resolver, visible);
+        } catch (BumpException error) {
+            return new CompletionSnapshot(null, Map.of());
+        }
     }
 }

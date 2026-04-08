@@ -1,11 +1,6 @@
 package bump;
 
-import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
-import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
-import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -36,6 +31,9 @@ public final class BumpLanguageServer implements LanguageServer, LanguageClientA
         SemanticTokensWithRegistrationOptions semanticTokens = new SemanticTokensWithRegistrationOptions(BumpSemanticTokens.legend(), true);
         semanticTokens.setRange(true);
         capabilities.setSemanticTokensProvider(semanticTokens);
+        CompletionOptions completion = new CompletionOptions();
+        completion.setTriggerCharacters(java.util.List.of("."));
+        capabilities.setCompletionProvider(completion);
         return CompletableFuture.completedFuture(new InitializeResult(capabilities));
     }
 

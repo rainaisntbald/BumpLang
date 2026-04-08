@@ -7,8 +7,12 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.Collections;
 import java.util.Set;
 
 public class Resolver implements Visitor<Void> {
@@ -46,6 +50,8 @@ public class Resolver implements Visitor<Void> {
     private final Set<FunctionLiteralExpr> predeclaredFunctionLiterals = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     private int activeLine = -1;
     private List<BumpException> recoveryErrors = null;
+    private Map<String, SymbolInfo> globalSymbolSnapshot = Map.of();
+    private final Map<String, NavigableMap<Integer, Map<String, SymbolInfo>>> visibleSymbolsByFileAndLine = new HashMap<>();
 
     public Resolver(Interpreter interpreter) {
         this(interpreter, null);
@@ -99,9 +105,29 @@ public class Resolver implements Visitor<Void> {
                     activeLine = previousLine;
                 }
             }
+            globalSymbolSnapshot = Collections.unmodifiableMap(new HashMap<>(symbols.peek()));
         } finally {
             endScope();
         }
+    }
+
+    Map<String, SymbolInfo> snapshotGlobalSymbols() {
+        return globalSymbolSnapshot;
+    }
+
+    Map<String, SymbolInfo> snapshotVisibleSymbols(String sourceFile, int sourceLine) {
+        if (sourceFile == null || sourceLine <= 0) {
+            return globalSymbolSnapshot;
+        }
+        NavigableMap<Integer, Map<String, SymbolInfo>> byLine = visibleSymbolsByFileAndLine.get(sourceFile);
+        if (byLine == null) {
+            return globalSymbolSnapshot;
+        }
+        Map.Entry<Integer, Map<String, SymbolInfo>> nearest = byLine.floorEntry(sourceLine);
+        if (nearest == null) {
+            return globalSymbolSnapshot;
+        }
+        return nearest.getValue();
     }
 
     private int skipStatementsOnSameLine(List<Stmt> statements, int index, Integer line) {
@@ -129,6 +155,7 @@ public class Resolver implements Visitor<Void> {
         } catch (BumpException error) {
             throw error.withFallbackLocation(stmt.getLine(), stmt.getColumn(), stmt.getLength(), stmt.describeLocation());
         } finally {
+            recordVisibleSymbolsForActiveLine();
             activeLine = previousLine;
         }
     }
@@ -143,8 +170,29 @@ public class Resolver implements Visitor<Void> {
         } catch (BumpException error) {
             throw error.withFallbackLocation(expr.getLine(), expr.getColumn(), expr.getLength(), expr.describeLocation());
         } finally {
+            recordVisibleSymbolsForActiveLine();
             activeLine = previousLine;
         }
+    }
+
+    private void recordVisibleSymbolsForActiveLine() {
+        if (activeLine <= 0 || symbols.isEmpty()) {
+            return;
+        }
+        BumpException.SourceLocation location = BumpException.sourceLocationForLine(activeLine);
+        if (location == null || location.file() == null || location.line() == null || location.line() <= 0) {
+            return;
+        }
+
+        Map<String, SymbolInfo> visible = new HashMap<>();
+        Iterator<Map<String, SymbolInfo>> scopeIterator = symbols.descendingIterator();
+        while (scopeIterator.hasNext()) {
+            visible.putAll(scopeIterator.next());
+        }
+
+        visibleSymbolsByFileAndLine
+                .computeIfAbsent(location.file(), ignored -> new TreeMap<>())
+                .put(location.line(), Collections.unmodifiableMap(visible));
     }
 
     void resolveFunction(FunctionLiteralExpr function, FunctionType type) {
