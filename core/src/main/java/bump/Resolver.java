@@ -611,6 +611,8 @@ public class Resolver implements Visitor<Void> {
         fileClass.methods.put("contents", List.of(signature(stringType)));
         fileClass.methods.put("set_contents", List.of(signature(nullType, stringType)));
         fileClass.methods.put("close", List.of(signature(nullType)));
+        fileClass.methods.put("create", List.of(signature(nullType)));
+        fileClass.methods.put("get_path", List.of(signature(stringType)));
 
         exceptionClass.fields.put(Builtins.EXCEPTION_MESSAGE, stringType);
         exceptionClass.fields.put(Builtins.EXCEPTION_LINE, integerType);

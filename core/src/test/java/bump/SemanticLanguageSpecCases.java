@@ -294,7 +294,7 @@ final class SemanticLanguageSpecCases {
 
                     File f = File("../README.md");
                     print(f.exists());
-                    print(f.size_bytes() > 0);
+                    print(f.size() > 0);
 
                     assert_true(true);
                     print("assert");

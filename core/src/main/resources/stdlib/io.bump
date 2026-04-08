@@ -34,7 +34,7 @@ extend File {
         }
     }
 
-    fun Integer size_bytes() {
+    fun Integer size() {
         return this.read_text().length();
     }
 
