@@ -124,14 +124,13 @@ public class Parser {
         Stmt body = parseStatement();
 
         String iteratorName = "__iter_" + syntheticVariableCounter++;
-        String iteratorTypeName = "Iterator<" + itemTypeName + ">";
 
         Expr iterCall = new CallExpr(
                 new GetExpr(source, "iter").at(keyword),
                 List.of(),
                 List.of()
         ).at(keyword);
-        VariableDeclarationStmt iteratorDecl = new VariableDeclarationStmt(iteratorTypeName, iteratorName, iterCall).at(keyword);
+        VariableDeclarationStmt iteratorDecl = new VariableDeclarationStmt(null, iteratorName, iterCall).at(keyword);
 
         Expr hasNext = new CallExpr(
                 new GetExpr(new VariableExpr(iteratorName).at(keyword), "has_next").at(keyword),
