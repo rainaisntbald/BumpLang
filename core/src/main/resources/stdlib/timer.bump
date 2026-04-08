@@ -1,0 +1,44 @@
+class Timer {
+    private Float _start_ms = 0.0;
+    private Float _end_ms = 0.0;
+    private Bool _running = false;
+
+    public fun void init() {
+    }
+
+    private fun Float _now_ms() {
+        Float now = 0.0;
+        unsafe_java {
+            double millis = System.nanoTime() / 1_000_000.0;
+            set("now", millis, interpreter, environment);
+        }
+        return now;
+    }
+
+    public fun void start() {
+        this._start_ms = this._now_ms();
+        this._end_ms = this._start_ms;
+        this._running = true;
+    }
+
+    public fun Float stop() {
+        if (this._running) {
+            this._end_ms = this._now_ms();
+            this._running = false;
+        }
+        return this._end_ms - this._start_ms;
+    }
+
+    public fun Float elapsed_ms() {
+        if (this._running) {
+            return this._now_ms() - this._start_ms;
+        }
+        return this._end_ms - this._start_ms;
+    }
+
+    public fun void reset() {
+        this._start_ms = 0.0;
+        this._end_ms = 0.0;
+        this._running = false;
+    }
+}
