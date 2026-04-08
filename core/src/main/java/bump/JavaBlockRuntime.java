@@ -13,19 +13,43 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 final class JavaBlockRuntime {
-    private static final Map<String, JavaBlockExecutable> CACHE = new HashMap<>();
+    private static final int MAX_CACHE_ENTRIES = 256;
+    private static final Object CACHE_LOCK = new Object();
+    private static final Map<String, JavaBlockExecutable> CACHE = new LinkedHashMap<>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, JavaBlockExecutable> eldest) {
+            return size() > MAX_CACHE_ENTRIES;
+        }
+    };
 
     private JavaBlockRuntime() {}
 
     static void execute(JavaBlockStmt stmt, Interpreter interpreter, Environment environment) {
         try {
-            JavaBlockExecutable executable = CACHE.computeIfAbsent(stmt.source, JavaBlockRuntime::compile);
+            JavaBlockExecutable executable;
+            synchronized (CACHE_LOCK) {
+                executable = CACHE.get(stmt.source);
+            }
+            if (executable == null) {
+                JavaBlockExecutable compiled = compile(stmt.source);
+                synchronized (CACHE_LOCK) {
+                    JavaBlockExecutable existing = CACHE.get(stmt.source);
+                    if (existing == null) {
+                        CACHE.put(stmt.source, compiled);
+                        executable = compiled;
+                    } else {
+                        executable = existing;
+                    }
+                }
+            }
             executable.execute(interpreter, environment);
         } catch (BumpException error) {
             throw error;
@@ -37,6 +61,7 @@ final class JavaBlockRuntime {
     }
 
     private static JavaBlockExecutable compile(String source) {
+        Path buildDir = null;
         try {
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) {
@@ -133,7 +158,7 @@ public final class %s implements JavaBlockExecutable {
 }
 """.formatted(className, indentSource(source));
 
-            Path buildDir = Files.createTempDirectory("bump-java-block");
+            buildDir = Files.createTempDirectory("bump-java-block");
             Path sourceFile = buildDir.resolve(className + ".java");
             Files.writeString(sourceFile, wrapperSource);
 
@@ -167,6 +192,8 @@ public final class %s implements JavaBlockExecutable {
             throw BumpRuntimeError.error("Failed to load compiled java block: " + error.getClass().getName() + ": " + error.getMessage());
         } catch (Exception error) {
             throw BumpRuntimeError.error("Unexpected error compiling java block: " + error.getClass().getName() + ": " + error.getMessage());
+        } finally {
+            deleteDirectoryQuietly(buildDir);
         }
     }
 
@@ -188,5 +215,20 @@ public final class %s implements JavaBlockExecutable {
                     .append(diagnostic.getMessage(Locale.ROOT));
         }
         return builder.toString();
+    }
+
+    private static void deleteDirectoryQuietly(Path dir) {
+        if (dir == null || !Files.exists(dir)) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(dir)) {
+            walk.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                }
+            });
+        } catch (IOException ignored) {
+        }
     }
 }
