@@ -6,7 +6,7 @@ BumpLang is a hobby project I put far too much time into over the past month and
 No guarantees are made about the language's stability, performance, and maintenance, except that they're all awful.
 <br>
 <br>
-The project's git history is empty, since it was supposed to be a small exercise, and I got carried away with adding things... whoops.
+The project's first commit is massive, since it was supposed to be a small exercise, and I got carried away with adding things... whoops.
 <br>
 <br>
 Run at the risk of your own sanity
