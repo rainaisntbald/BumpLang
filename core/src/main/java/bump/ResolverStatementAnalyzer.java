@@ -104,6 +104,9 @@ final class ResolverStatementAnalyzer {
             if (!functionDeclaration) {
                 resolver.expressionAnalyzer.validateAssignmentCompatibility(stmt.getResolvedType(), valueType, "variable '" + stmt.name + "'");
             }
+            if (!functionDeclaration && stmt.typeName == null && valueType != null) {
+                resolver.setCurrentSymbol(stmt.name, SymbolKind.VARIABLE, valueType, null);
+            }
             if (!functionDeclaration && "Function".equals(stmt.typeName) && valueType != null && Builtins.FUNCTION.equals(valueType.name())) {
                 resolver.setCurrentSymbol(stmt.name, SymbolKind.VARIABLE, valueType, null);
             }
