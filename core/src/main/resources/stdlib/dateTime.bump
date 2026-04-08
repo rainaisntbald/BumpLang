@@ -153,20 +153,32 @@ class DateTime implements Comparable {
         this._require_range(second, 0, 59, "Second");
 
         Integer epoch = 0;
-        unsafe_java {
-            Integer year = (Integer) get("year", environment);
-            Integer month = (Integer) get("month", environment);
-            Integer day = (Integer) get("day", environment);
-            Integer hour = (Integer) get("hour", environment);
-            Integer minute = (Integer) get("minute", environment);
-            Integer second = (Integer) get("second", environment);
+        try {
+            unsafe_java {
+                Integer year = (Integer) get("year", environment);
+                Integer month = (Integer) get("month", environment);
+                Integer day = (Integer) get("day", environment);
+                Integer hour = (Integer) get("hour", environment);
+                Integer minute = (Integer) get("minute", environment);
+                Integer second = (Integer) get("second", environment);
 
-            java.time.LocalDateTime dateTime = java.time.LocalDateTime.of(year, month, day, hour, minute, second);
-            long epochSecond = dateTime.toEpochSecond(java.time.ZoneOffset.UTC);
-            if (epochSecond < Integer.MIN_VALUE || epochSecond > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("DateTime is out of Integer epoch range.");
+                java.time.LocalDateTime dateTime = java.time.LocalDateTime.of(year, month, day, hour, minute, second);
+                long epochSecond = dateTime.toEpochSecond(java.time.ZoneOffset.UTC);
+                if (epochSecond < Integer.MIN_VALUE || epochSecond > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException("DateTime is out of Integer epoch range.");
+                }
+                set("epoch", (int) epochSecond, interpreter, environment);
             }
-            set("epoch", (int) epochSecond, interpreter, environment);
+        } catch (Exception ignored) {
+            ValueError err = ValueError();
+            err.message = "Invalid date/time: "
+                    + this._pad(year, 4) + "-"
+                    + this._pad(month, 2) + "-"
+                    + this._pad(day, 2) + "T"
+                    + this._pad(hour, 2) + ":"
+                    + this._pad(minute, 2) + ":"
+                    + this._pad(second, 2);
+            throw(err);
         }
         return epoch;
     }
